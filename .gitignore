@@ -12,6 +12,10 @@
 
 # testing
 /coverage
+/test-results
+/playwright-report
+/blob-report
+/playwright/.cache
 
 # next.js
 /.next/
@@ -23,6 +27,11 @@
 # misc
 .DS_Store
 *.pem
+.idea/
+.claude/
+
+# local Supabase CLI state
+supabase/.temp/
 
 # debug
 npm-debug.log*
@@ -32,6 +41,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -39,3 +49,21 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# real course content — not synthetic test data, kept out of git
+fixtures/pptx/*.pptx
+
+# real, currently-in-use teaching material (lecture decks, the actual
+# Mock Test question bank with its answer key) — never public. Same
+# reasoning as fixtures/pptx/ above, for the folder the instructor
+# actually drops files into day-to-day.
+/Class Materials CSE 1203/
+scripts/data/question_bank.json
+
+# generated dev/test account credentials
+scripts/.dev-credentials.json
+
+# ad-hoc debugging screenshots dropped in the repo root during dev sessions
+/*.jpg
+/*.jpeg
+/*.png

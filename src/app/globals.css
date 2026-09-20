@@ -1,26 +1,146 @@
 @import "tailwindcss";
 
+/*
+  Design system tokens.
+  Palette is intentionally restrained: ink/paper neutrals + a single
+  event color (azure) reserved for interaction, selection, and meaning.
+  See docs/ARCHITECTURE.md for the rationale.
+*/
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-ink: #111318;
+  --color-charcoal: #1a1d24;
+  --color-warm-paper: #f7f6f2;
+  --color-surface: #fcfbf8;
+  --color-azure: #1769ff;
+  --color-azure-soft: #dce9ff;
+  --color-text: #17191f;
+  /* Was #747985 (~4.0:1 on --color-warm-paper — fails WCAG AA's 4.5:1
+     for normal-size text). Darkened to restore AA contrast without
+     changing the palette's character. */
+  --color-muted: #5f6470;
+  --color-border: #dedcd7;
+
+  /* Correct/incorrect feedback (Practice, assessment review) — kept
+     distinct from --color-azure (links/interactive elements) so
+     "correct answer" and "clickable thing" never share one meaning.
+     Never the only signal: always paired with a ✓/✕ glyph and text. */
+  --color-success: #15803d;
+  --color-success-soft: #dcfce7;
+  --color-danger: #b91c1c;
+  --color-danger-soft: #fef2f2;
+
+  --background: var(--color-warm-paper);
+  --foreground: var(--color-text);
 }
 
 @theme inline {
+  --color-ink: var(--color-ink);
+  --color-charcoal: var(--color-charcoal);
+  --color-warm-paper: var(--color-warm-paper);
+  --color-surface: var(--color-surface);
+  --color-azure: var(--color-azure);
+  --color-azure-soft: var(--color-azure-soft);
+  --color-text: var(--color-text);
+  --color-muted: var(--color-muted);
+  --color-border: var(--color-border);
+  --color-success: var(--color-success);
+  --color-success-soft: var(--color-success-soft);
+  --color-danger: var(--color-danger);
+  --color-danger-soft: var(--color-danger-soft);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-fraunces);
+
+  /*
+    Typography scale — reinterprets Tailwind's existing text-* utility
+    names rather than hand-editing hundreds of call sites. The codebase
+    already keeps genuinely tiny UI chrome (status pills, kind badges)
+    on explicit arbitrary sizes like text-[10px]/text-[11px], which
+    this does NOT touch — only the semantic scale used for real content
+    moves. Roles, by how they're actually used in this codebase today:
+      text-xs  → secondary/metadata, eyebrows           12px → 15px
+      text-sm  → body copy, navigation, form inputs      14px → 16px
+      text-lg  → card/subsection titles                  18px → 20px
+      text-xl  → section titles                          20px → 28px
+      text-2xl → stat numbers, mobile page title          24px → 30px
+      text-3xl → desktop page title (PageHeader)          30px → 38px
+    Restrained on purpose — this raises a floor, it doesn't blow
+    everything up. See docs/HANDOFF_NEXT_SESSION.md.
+  */
+  --text-xs: 0.9375rem;
+  --text-xs--line-height: 1.4rem;
+  --text-sm: 1rem;
+  --text-sm--line-height: 1.6rem;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.65rem;
+  --text-xl: 1.75rem;
+  --text-xl--line-height: 2.1rem;
+  --text-2xl: 1.875rem;
+  --text-2xl--line-height: 2.25rem;
+  --text-3xl: 2.375rem;
+  --text-3xl--line-height: 2.6rem;
+
+  --animate-fade-up: fade-up 200ms ease-out;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/*
+  Coursework is deliberately light-only for now — there is no coherent,
+  designed-and-tested dark theme in this codebase (many components use
+  raw Tailwind colors like text-red-700/bg-red-50 that never respond to
+  the tokens above), so letting `prefers-color-scheme: dark` flip only
+  SOME tokens produced exactly the reported bug: text and backgrounds
+  drifting out of sync, leaving unreadable low-contrast combinations on
+  real devices. `color-scheme: light` additionally tells the browser
+  itself (in particular iOS Safari) not to restyle native form controls
+  — inputs, placeholders, checkboxes — into their dark variant just
+  because the OS prefers dark, which would otherwise fight this
+  explicitly light page. Revisit deliberately if a real dark theme is
+  ever designed — don't reintroduce this as an incomplete media query.
+*/
+:root {
+  color-scheme: light;
+}
+
+* {
+  border-color: var(--color-border);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Visible, deliberate focus ring — never rely on color alone. */
+:focus-visible {
+  outline: 2px solid var(--color-azure);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
