@@ -3,9 +3,65 @@
 # Coursework — durable architectural rules
 
 These rules are project-specific and persist across sessions (unlike
-the Next.js block above, which `next dev` regenerates). See
-`docs/COURSEWORK_LEARNING_ARCHITECTURE.md` for the academic model and
-`docs/HANDOFF_NEXT_SESSION.md` for current state / open work.
+the Next.js block above, which `next dev` regenerates).
+
+## READ THIS FIRST
+
+This is a **live production application** — a real instructor is
+teaching a real course (CSE 1203, Premier University) with it, on a
+database shared with local development (see "Production safety" below
+before running anything that writes to it).
+
+- **Full architecture**: `docs/ARCHITECTURE_HANDOFF.md` — read this
+  before touching auth, the database, or the AI Tutor. It's written so
+  you don't have to reverse-engineer the repository from scratch.
+- **What's safe to do right now**: `docs/SAFE_DEVELOPMENT.md`.
+- **Operational issues**: `docs/PRODUCTION_RUNBOOK.md`.
+- **Critical self-assessment + roadmap**: `docs/PRODUCT_AND_ARCHITECTURE_REVIEW.md`.
+- **External positioning**: `docs/PITCH_STRATEGY.md`.
+- **Point-in-time session status**: `docs/HANDOFF_NEXT_SESSION.md` (may
+  be stale — `docs/ARCHITECTURE_HANDOFF.md` is the maintained source of
+  truth for how the system actually works).
+- **Academic domain model**: `docs/COURSEWORK_LEARNING_ARCHITECTURE.md`.
+
+### Branch strategy
+
+- `main` — production-safe, known-good code. Tag `v0.1.0-live-pilot`
+  (commit `637091a`) is the frozen baseline used for live teaching;
+  redeploy it via `docs/PRODUCTION_RUNBOOK.md` if a later change
+  breaks production.
+- `develop` — ongoing integration/development, branched from the same
+  known-good commit.
+- `feature/*` — substantial individual changes, where useful.
+- Vercel production deploys are **manual** (`vercel --prod`), **not**
+  triggered automatically by pushing to `main` — see
+  `docs/ARCHITECTURE_HANDOFF.md` §14. Pushing docs/config to GitHub
+  does not affect the live site by itself.
+
+### Production safety — the essential rule
+
+Local dev, every test suite, and production **share one Supabase
+database**. Before running any migration, schema change, or script
+that uses `SUPABASE_SECRET_KEY`, read `docs/SAFE_DEVELOPMENT.md`. Before
+writing or reviewing any new authorization-sensitive SQL, read the
+"historical security lesson" in `docs/ARCHITECTURE_HANDOFF.md` §12
+(the `!=` vs `IS DISTINCT FROM` NULL trap — it has already caused two
+real incidents in this project).
+
+### Commands that must pass before merging to `main`
+
+```bash
+npx tsc --noEmit
+npx eslint .
+npm run test        # live integration tests — see docs/SAFE_DEVELOPMENT.md
+npm run build
+```
+
+Add `npm run test:e2e` (Playwright, requires `npm run dev` running, or
+point `PLAYWRIGHT_BASE_URL` at a deployment) for anything touching
+login, navigation, or the assessment-taking flow. There is no CI
+pipeline yet — these are run by hand; see
+`docs/PRODUCT_AND_ARCHITECTURE_REVIEW.md` #7 for why that's a named gap.
 
 ## Migrations
 
