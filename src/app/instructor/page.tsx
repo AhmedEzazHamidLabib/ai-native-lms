@@ -2,17 +2,19 @@ import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CourseCard } from "@/components/course/course-card";
-import { getInstructorCourses, getMyFullName } from "@/lib/supabase/course";
+import { getInstructorCoursesWithNames, getMyFullName } from "@/lib/supabase/course";
 import { ProfileCompletionBanner } from "@/components/profile/profile-completion-banner";
+import { CreateCourseForm } from "@/components/instructor/create-course-form";
 
 export default async function InstructorOverviewPage() {
-  const [courses, fullName] = await Promise.all([getInstructorCourses(), getMyFullName()]);
+  const [courses, fullName] = await Promise.all([getInstructorCoursesWithNames(), getMyFullName()]);
 
   return (
     <>
       <PageHeader
         title="Your courses"
         description="Pick a course to manage its content, assessments, and roster."
+        action={<CreateCourseForm />}
       />
       {!fullName && (
         <ProfileCompletionBanner message="Add your name so students and co-instructors can recognize you." />
@@ -31,6 +33,7 @@ export default async function InstructorOverviewPage() {
               code={c.code}
               title={c.title}
               term={c.term}
+              instructorName={c.instructorName}
               action={
                 <Link
                   href={`/instructor/courses/${c.id}`}

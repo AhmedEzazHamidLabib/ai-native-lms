@@ -4,11 +4,14 @@ export function CourseCard({
   code,
   title,
   term,
+  instructorName,
   action,
 }: {
   code: string;
   title: string;
   term: string;
+  /** Display name only — never pass an email here. Omit if unknown rather than inventing one. */
+  instructorName?: string | null;
   action: ReactNode;
 }) {
   return (
@@ -18,7 +21,10 @@ export function CourseCard({
           {code}
         </p>
         <p className="font-display text-lg text-ink truncate">{title}</p>
-        <p className="text-xs text-muted mt-0.5">{term}</p>
+        <p className="text-xs text-muted mt-0.5">
+          {term}
+          {instructorName && ` · Instructor: ${instructorName}`}
+        </p>
       </div>
       <div className="shrink-0">{action}</div>
     </li>

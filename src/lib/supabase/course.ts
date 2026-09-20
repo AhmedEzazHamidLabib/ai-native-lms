@@ -172,6 +172,32 @@ export async function getInstructorCourses(): Promise<CourseSummary[]> {
   return memberships.filter((m) => m.role === "instructor").map((m) => m.course);
 }
 
+export interface CourseSummaryWithInstructor extends CourseSummary {
+  instructorName: string | null;
+}
+
+/**
+ * Same as getInstructorCourses(), annotated with each course's display
+ * instructor (0049's get_course_instructors()) — useful now that an
+ * instructor can create a course themselves and other instructors
+ * (who, per the current global-instructor-access model, immediately
+ * see it too) benefit from knowing whose course it is. Kept separate
+ * from getInstructorCourses()/isInstructorAnywhere() so the hot
+ * "does /instructor even open" check never pays for an extra RPC call
+ * it doesn't need.
+ */
+export async function getInstructorCoursesWithNames(): Promise<CourseSummaryWithInstructor[]> {
+  const supabase = await createClient();
+  const [courses, { data: instructors }] = await Promise.all([
+    getInstructorCourses(),
+    supabase.rpc("get_course_instructors"),
+  ]);
+  return courses.map((c) => ({
+    ...c,
+    instructorName: instructors?.find((i) => i.course_id === c.id)?.instructor_name ?? null,
+  }));
+}
+
 /**
  * Is this user an instructor of ANY course? Instructor status is
  * currently granted globally (every course, via the email-confirmation
@@ -192,6 +218,8 @@ export type EnrollmentStatus =
 
 export interface CourseWithStatus extends CourseSummary {
   status: EnrollmentStatus;
+  /** Display name only, never an email — see get_course_instructors() (0049). Null if no instructor has a full_name set yet. */
+  instructorName: string | null;
 }
 
 /** The full catalog, each course annotated with this user's relationship to it — powers "Available Courses." */
@@ -212,26 +240,26 @@ export async function getAllCoursesWithStatus(): Promise<CourseWithStatus[]> {
   // Explicit user_id filters for the same reason as getCourseMembership
   // / getMyCourses — an instructor's RLS visibility is roster-wide, not
   // self-only, so this must not rely on RLS alone to scope "mine."
-  const { data: memberships } = await supabase
-    .from("course_members")
-    .select("course_id, role")
-    .eq("user_id", user.id);
-
-  const { data: pending } = await supabase
-    .from("enrollment_requests")
-    .select("course_id")
-    .eq("user_id", user.id)
-    .eq("status", "pending");
+  const [{ data: memberships }, { data: pending }, { data: instructors }] = await Promise.all([
+    supabase.from("course_members").select("course_id, role").eq("user_id", user.id),
+    supabase.from("enrollment_requests").select("course_id").eq("user_id", user.id).eq("status", "pending"),
+    // A browsing user has no RLS path to another user's profile until
+    // they're actually a course member — get_course_instructors() is
+    // SECURITY DEFINER specifically to make "who teaches this" visible
+    // on the catalog anyway, names only, never emails.
+    supabase.rpc("get_course_instructors"),
+  ]);
 
   return courses.map((c) => {
     const membership = memberships?.find((m) => m.course_id === c.id);
     const hasPending = pending?.some((p) => p.course_id === c.id);
+    const instructorName = instructors?.find((i) => i.course_id === c.id)?.instructor_name ?? null;
 
     let status: EnrollmentStatus = "none";
     if (membership?.role === "instructor") status = "enrolled_instructor";
     else if (membership?.role === "student") status = "enrolled_student";
     else if (hasPending) status = "pending";
 
-    return { ...toCourseSummary(c), status };
+    return { ...toCourseSummary(c), status, instructorName };
   });
 }

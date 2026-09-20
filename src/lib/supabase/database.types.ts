@@ -33,6 +33,7 @@ export interface Database {
           meeting_end_time: string | null;
           timezone: string;
           students_can_see_roster: boolean;
+          created_by: string | null;
           created_at: string;
         };
         Insert: {
@@ -48,6 +49,7 @@ export interface Database {
           meeting_end_time?: string | null;
           timezone?: string;
           students_can_see_roster?: boolean;
+          created_by?: string | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["courses"]["Insert"]>;
@@ -1488,6 +1490,14 @@ export interface Database {
       add_instructor_email: {
         Args: { p_email: string };
         Returns: undefined;
+      };
+      create_course: {
+        Args: { p_code: string; p_title: string; p_term: string };
+        Returns: string;
+      };
+      get_course_instructors: {
+        Args: Record<string, never>;
+        Returns: { course_id: string; instructor_name: string | null }[];
       };
       remove_instructor_email: {
         Args: { p_email: string };

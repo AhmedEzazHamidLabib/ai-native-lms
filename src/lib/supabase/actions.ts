@@ -206,7 +206,8 @@ export async function instructorSignUp(
 
   if (existing?.email_confirmed_at) {
     return {
-      error: "This account already exists and is verified — try signing in instead.",
+      error:
+        "An account already exists for this email and is already verified — sign in instead of signing up again. If your instructor access was recently (re-)authorized, signing in now will pick that up automatically.",
       info: null,
     };
   }

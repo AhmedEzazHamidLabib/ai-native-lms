@@ -28,6 +28,7 @@ export default async function AvailableCoursesPage() {
               code={c.code}
               title={c.title}
               term={c.term}
+              instructorName={c.instructorName}
               action={
                 c.status === "enrolled_student" || c.status === "enrolled_instructor" ? (
                   <Link
