@@ -23,6 +23,13 @@ before running anything that writes to it).
   be stale — `docs/ARCHITECTURE_HANDOFF.md` is the maintained source of
   truth for how the system actually works).
 - **Academic domain model**: `docs/COURSEWORK_LEARNING_ARCHITECTURE.md`.
+- **Performance work (2026-09-22/23)**: `docs/PERFORMANCE_DIAGNOSTIC_2026-09-21.md`
+  (the original investigation) and `docs/PERFORMANCE_OPTIMIZATION_2026-09-22.md`
+  (every phase since — prefetch fix, auth dedup, query collapse, the
+  Sydney region cutover, the load test). Read before touching
+  `src/proxy.ts`, `src/lib/supabase/course.ts`, `getCourseContent()`,
+  `src/components/shell/course-context-bar.tsx`, `vercel.json`, or
+  anything under `scripts/perf/`.
 
 ### Branch strategy
 
@@ -37,6 +44,11 @@ before running anything that writes to it).
   triggered automatically by pushing to `main` — see
   `docs/ARCHITECTURE_HANDOFF.md` §14. Pushing docs/config to GitHub
   does not affect the live site by itself.
+- Production runs in Vercel region **`syd1`** (pinned via committed
+  `vercel.json`, co-located with Supabase in `ap-southeast-2`) as of
+  2026-09-22 — not the Vercel default (`iad1`). See "Performance
+  architecture" below before changing `vercel.json` or the deploy
+  process.
 
 ### Production safety — the essential rule
 
@@ -88,6 +100,78 @@ pipeline yet — these are run by hand; see
   `create or replace` can silently supersede an earlier fix (this is
   exactly how the NULL-authorization-check regression below went
   undetected for years).
+
+## Performance architecture (2026-09-22/23 pass)
+
+Full investigation and every measurement:
+`docs/PERFORMANCE_DIAGNOSTIC_2026-09-21.md` +
+`docs/PERFORMANCE_OPTIMIZATION_2026-09-22.md`. Durable rules that came
+out of it:
+
+- **Vercel region is `syd1`, pinned in a committed `vercel.json`.**
+  Co-located with Supabase (`ap-southeast-2`) on purpose — measured
+  median per-call Supabase latency dropped ~284ms → ~26ms moving off
+  the Vercel default (`iad1`). Don't remove or "clean up" this file
+  without re-reading Phase 4's experiment first; it's the single
+  highest-leverage change this pass found. Rollback reference (prior
+  known-good `iad1` production deployment):
+  `dpl_CUUN61wSmPnwzpwCjjT1xvMbnZxR`.
+- **Never let an automated script authenticate as a real account.**
+  A verification script once signed in as the real instructor account
+  (the only "instructor" fixture available at the time) and called
+  Supabase's `signOut()` with its **default global scope**, which
+  revokes every active session for that account, not just the
+  script's own — likely force-logging out any real active session.
+  Fixed structurally, not just that one call site: every script under
+  `scripts/perf/` now imports `assertSyntheticAccount`/`safeSignOut`
+  from `scripts/perf/fixture-safety.mjs` — the former throws unless
+  the email matches a known synthetic-fixture pattern
+  (`@example.test`, or this repo's timestamped `selfsignup-*`/
+  `tomorrow-student-*` conventions), the latter hard-codes
+  `{ scope: "local" }` so a script can never revoke a real account's
+  other sessions even by omission. **Use both in any new automated
+  script that signs in** — there is still no synthetic instructor
+  fixture in this project (only `dev-student@example.test` and two
+  timestamped disposable student accounts), so don't write a script
+  that assumes one exists.
+- **`getVerifiedUser()` in `src/lib/supabase/course.ts`** is a
+  `React.cache()`-wrapped `auth.getUser()` — the one place that
+  actually hits the network. Every helper in that file resolves the
+  user through it instead of calling `supabase.auth.getUser()`
+  directly, so a single request/render only pays for identity
+  verification once. Add any new per-request identity read to this
+  file through the same function, not a fresh `auth.getUser()` call.
+  `src/proxy.ts`'s own check is deliberately independent (middleware
+  runs in a separate execution context, and identity there must stay
+  independently server-verified — never wire it to this cache or trust
+  a client-supplied header instead).
+- **`getCourseContent()` (`src/lib/domain/queries.ts`) is one nested
+  PostgREST select, not five sequential queries.** `materials` and
+  `material_versions` have two separate foreign keys between them
+  (`material_versions.material_id -> materials.id`, the "all versions"
+  relationship, and `materials.current_version_id ->
+  material_versions.id`, the "current version only" one) — the embed
+  MUST name the constraint explicitly
+  (`material_versions!materials_current_version_fk(...)`) or PostgREST
+  can't tell which relationship you mean, and getting it wrong would
+  silently fetch every version of every material instead of just the
+  current one. `getLectureContent()`/`getMaterialDetail()` still use
+  the old sequential-query pattern — deliberately not touched this
+  pass (out of scope), but good candidates for the same treatment if
+  they ever show up as a bottleneck.
+- **`next/link` on a nav surface with many items needs `prefetch={false}`.**
+  Next.js prefetches every visible `<Link>` by default, and each
+  prefetch re-runs that route's full server-side layout chain
+  (including auth checks) in the background — the 13-item course
+  sidebar (`src/components/shell/course-context-bar.tsx`) was doing
+  this invisibly on every page load, multiplying real Supabase Auth
+  traffic ~3-4x. Any new nav component with more than a couple of
+  auth-gated links should default to `prefetch={false}` rather than
+  rediscovering this.
+- `src/instrumentation.ts` (env-gated on `PERF_DIAG=1`, logs Supabase
+  fetch timing) and the harness under `scripts/perf/` are inert by
+  default and safe to reuse for future performance work — they are
+  not temporary scaffolding to delete.
 
 ## Security: the `!=` vs `is distinct from` NULL-check trap
 

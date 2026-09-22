@@ -528,6 +528,18 @@ to NULL when `created_by` is unset).
   commit reference). Every deployment so far has been a manual
   `vercel --prod` run from local code. Pushing to `main` on GitHub
   does **not** trigger a Vercel rebuild.
+- **Function region: `syd1` (Sydney)**, pinned via a committed
+  `vercel.json` (`{"regions": ["syd1"]}`) as of 2026-09-22 —
+  deliberately co-located with Supabase (`ap-southeast-2`), not the
+  Vercel default (`iad1`/Virginia). Measured cause: median per-call
+  Supabase latency dropped from ~284ms (`iad1`) to ~26ms (`syd1`) for
+  identical code in a controlled Preview-vs-Preview experiment; see
+  `docs/PERFORMANCE_OPTIMIZATION_2026-09-22.md` Phase 4 for the full
+  investigation and `docs/HANDOFF_NEXT_SESSION.md` for the cutover
+  narrative. Rollback reference (previous known-good `iad1` production
+  deployment): `dpl_CUUN61wSmPnwzpwCjjT1xvMbnZxR` — `vercel rollback`
+  or `vercel promote dpl_CUUN61wSmPnwzpwCjjT1xvMbnZxR` restores it
+  instantly, no rebuild, no Supabase involvement either direction.
 - **Environment variables**: `NEXT_PUBLIC_SUPABASE_URL`,
   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`,
   `ANTHROPIC_API_KEY` — configured **only** for the "Production"
