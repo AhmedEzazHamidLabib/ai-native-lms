@@ -690,26 +690,297 @@ database per `SAFE_DEVELOPMENT.md` — not run casually, and none of
 this pass's changes touch a code path those suites specifically cover
 that the targeted checks above don't already exercise more precisely).
 
-**Verdict: clean. Committed.**
+**Verdict: clean. Committed** (local `main`, not pushed):
 
 ```
-764cd3e (example) perf: collapse course-content waterfall, dedupe auth, control prefetch
+22366fb perf: collapse course-content waterfall, dedupe auth, control prefetch
 ```
 
-(see actual commit hash in `git log` — this pass's changes: prefetch
-control, auth dedup, query collapse, instrumentation, hardened harness,
-and this document.)
+17 files changed: the three source changes (prefetch control, auth
+dedup, query collapse), `src/instrumentation.ts`, the full
+`scripts/perf/` harness (including result JSON, scanned for secrets/PII
+before staging — none found), and both diagnostic documents.
 
 ---
 
 ## Phase 4 — Geography analysis
 
-Not started (and not to be acted on without separate approval per the
-original instruction).
+Read-only throughout. No Vercel configuration, region, Supabase project,
+or environment variable was changed. Everything below is either a
+direct measurement from this session (labeled **MEASURED**) or a
+widely-published, commonly-cited figure this investigation did not
+itself generate (labeled **ESTIMATE/PUBLISHED**) — kept visibly
+separate, per instruction.
+
+### Known topology (MEASURED, this pass and the prior diagnostic)
+
+- **Vercel function region: `iad1`** (Washington, D.C. / Virginia).
+  `X-Vercel-Id: bom1::iad1::...` from the live production URL —
+  `bom1` is the Mumbai edge PoP that received the request, `iad1` is
+  where the Next.js server actually ran. No `vercel.json`/`vercel.ts`
+  exists in this repo, so this is the account/project default, not a
+  deliberate choice.
+- **Supabase project region: `ap-southeast-2`** (Sydney). Confirmed
+  from the pooler hostname in `.env.local`
+  (`aws-0-ap-southeast-2.pooler.supabase.com`).
+- **This environment's own network vantage point** appears South-Asia-
+  proximate (the original diagnostic found a Cloudflare `CF-RAY` tag of
+  `DAC`, Dhaka, on a direct Supabase request) — a reasonable, though not
+  certified, stand-in for a Bangladesh-based user, and the same
+  environment every Phase 1-3 measurement in this document was taken
+  from.
+
+### New measurements this phase (MEASURED)
+
+Real-time to raw AWS regional endpoints (`https://s3.<region>.amazonaws.com/`,
+public, read-only, 3-5 samples each) as a region-comparison proxy,
+independent of both Vercel's and Supabase's own edge/CDN layers:
+
+| Region | Connect time (this environment) | Notes |
+|---|---|---|
+| `ap-south-1` (Mumbai) | **~45-80ms** | Fastest — matches the `bom1` Vercel edge PoP finding |
+| `ap-southeast-1` (Singapore) | **~80-140ms** | Second-fastest |
+| `ap-northeast-1` (Tokyo) | ~130-215ms | |
+| `ap-southeast-2` (Sydney) — **current Supabase region** | ~230-390ms | |
+| `us-east-1` (Virginia) — **current Vercel region** | ~300-380ms | Comparable to Sydney, both well behind Singapore/Mumbai |
+
+Separately, real Supabase project traffic showed a pattern worth
+investigating rather than averaging away: a lightweight, unauthenticated
+call to Supabase's own health endpoint returned in **~11-33ms
+connect / ~55-264ms TTFB** — much faster than the raw AWS-Sydney figure
+above — while every real, authenticated data call made throughout
+Phases 1-3 (same environment, same network path) consistently took
+**~420-560ms**. Investigated: the most likely mechanism is that
+Supabase fronts its API with its own CDN/edge layer (independent of
+Vercel's), which terminates the client connection nearby and quickly
+answers anything that doesn't need real backend work; a call that
+*does* need real work (JWT validation, an RLS-scoped Postgres query)
+then pays an additional edge→Sydney-backend hop on top — a fast
+handshake (~50-150ms) plus genuine Sydney round-trip/query time
+(~270-400ms, consistent with the raw AWS-Sydney figures above) adds up
+to almost exactly the ~420-560ms observed throughout this entire pass.
+This matters directly for the topology question below: it suggests the
+*client-facing* leg to Supabase can be fast almost regardless of
+region (edge-fronted), but the *backend* Sydney-processing cost is
+close to fixed unless the caller is actually near Sydney.
+
+### An honest gap in this measurement, not papered over
+
+Every Phase 1-3 number in this document (the ~420-560ms per-call figure
+included) was produced by running the Next.js app **locally, on this
+sandbox**, not inside Vercel's actual Virginia datacenter. That
+approximates "a Bangladesh-ish vantage point talking to Sydney," which
+is genuinely useful for understanding the *waterfall structure* and the
+*relative* wins from Phases 2A/2B/3 — but it is **not** a direct
+measurement of production's real Virginia-function-to-Sydney-database
+server-to-server latency, which this session has no way to obtain
+without either deploying test code to Virginia (an infrastructure
+change, out of scope for this phase) or reading Vercel's own function
+logs (this session has no authenticated Vercel CLI access — confirmed
+unavailable at session start). This gap is exactly what the
+recommended next experiment (below) is designed to close, safely.
+
+### Topology comparison
+
+**A. Current — Virginia Vercel → Sydney Supabase.**
+Bangladesh↔Virginia (client↔function) pays real transoceanic distance
+on every request; Virginia↔Sydney (function↔database) is paid on every
+one of the 2-3 remaining sequential Supabase calls per page (post
+Phase 2A/2B/3). Published estimate for the function↔database leg
+specifically (**ESTIMATE**, not measured by this session): commonly-cited
+AWS `us-east-1`↔`ap-southeast-2` inter-region network RTT is roughly
+200-230ms at the base network layer; real application-level round
+trips (TLS, HTTP, actual query execution) typically land higher —
+plausibly in the same few-hundred-ms range this session measured from
+its own (different) vantage point. This is the baseline everything
+below is compared against.
+
+**B. Singapore/nearby Vercel → Sydney Supabase (no DB change).**
+Improves the Bangladesh↔function leg substantially — **measured**
+~80-140ms to Singapore vs. ~300-380ms to Virginia from this environment,
+a real and large improvement for the single client↔function round trip
+each request makes. **Does not** improve the function↔database leg,
+which is what's paid 2-3 times *sequentially* per page and is the
+larger, repeated cost. Operational complexity: low (a region field, no
+data migration). Rollback: trivial (redeploy with the old region or no
+region pin). **Net assessment: meaningfully better first/last-byte
+latency, but doesn't touch the dominant repeated cost** — this is
+precisely the "geographically closest ≠ fastest for this workload"
+case the instruction anticipated.
+
+**C. Sydney Vercel → Sydney Supabase (co-located, no DB change).**
+Function↔database calls would become same-region (or same-metro)
+traffic — typically single-digit-to-low-double-digit ms instead of
+the ~270-400+ms Sydney-backend cost measured/estimated above, for
+*each* of the 2-3 sequential calls a page still makes after Phases
+2A-3. That's the dominant, repeated cost in the current waterfall, so
+this is where most of the *remaining* application-level latency
+plausibly lives. The trade-off: the Bangladesh↔function leg doesn't
+improve (Sydney's raw RTT from this environment, ~230-390ms, is
+comparable to — not clearly better than — Virginia's ~300-380ms), so
+the *first* and *last* network hop of each request stays roughly where
+it is today. Operational complexity: low — a Vercel function-region
+setting only, no Supabase changes, no key rotation, no data migration.
+Rollback: trivial (same as B). **This is the topology the instruction
+specifically flagged as worth checking first, and the measurements
+here support that instinct**: it targets the *repeated* cost (2-3x per
+page) rather than the *single* cost (1x per page) B targets, and does
+so at the same low risk/effort as B.
+
+**D. Singapore/nearby Vercel → Singapore Supabase (requires DB
+migration).** Best theoretical outcome — fast on both legs
+simultaneously (**measured** ~80-140ms Bangladesh↔Singapore, and a
+co-located function↔database leg). But this requires migrating
+Supabase Auth, Postgres, Storage, all configuration, and all keys — a
+categorically larger, higher-risk, harder-to-reverse undertaking than
+A→B or A→C, on a project explicitly documented as having no staging
+environment and one shared production database
+(`SAFE_DEVELOPMENT.md`). **Not justified by current evidence**: Topology
+C already targets the dominant cost at a small fraction of the risk;
+D's *incremental* benefit over C (improving the single client↔function
+leg by roughly the same amount B would) doesn't come close to
+justifying a full data-plane migration on this project's current scale
+(one real course, four real students) and safety posture.
+
+### Recommendation
+
+**Move only the Vercel function region, toward Sydney (Topology C),
+and validate it on a Preview deployment before touching Production —
+do not execute this yet.** Concretely, as the next experiment:
+
+1. Add a `regions` pin (via `vercel.json` or `vercel.ts`, per current
+   Vercel docs — this session could not independently re-verify the
+   exact current region code list or Hobby/Pro region-selection limits
+   against a live account, since no authenticated Vercel CLI/dashboard
+   access is available here; confirm the exact syntax and available
+   region codes directly against Vercel's own docs or `vercel regions
+   ls` before touching anything) to a Sydney-region function.
+2. Deploy as a **Preview** (`vercel deploy`, no `--prod`) — per
+   `ARCHITECTURE_HANDOFF.md` §14, this project's Preview environment
+   has **zero database environment variables configured**, so a
+   Preview deploy is safe by construction; it would need the same
+   Supabase env vars temporarily added to Preview (a config change of
+   its own, needing the same sign-off as everything else here) to
+   actually reach the database and be measurable.
+3. Measure the Preview URL with the same tooling already built
+   (`curl -w`, or the `PERF_DIAG` instrumentation already in the tree)
+   and compare directly against this document's Phase 1-3 baselines.
+4. Only promote to Production if the Preview measurement confirms the
+   expected win — turning an infrastructure bet into a measured
+   decision instead of an assumption, the same discipline this entire
+   document has tried to hold to.
+
+This keeps the higher-risk, higher-effort Topology D (Supabase
+migration) off the table entirely unless C is tried first and turns out
+insufficient — which current evidence gives no reason to expect.
+
+---
 
 ## Phase 5 — Load test design
 
-Not started.
+Design only — **the 10/25/50-user stages are not run against
+production in this pass**, per instruction. A 1-user local validation
+of the harness itself is included below to prove it works and mutates
+nothing.
+
+### Two separate concerns, deliberately not conflated
+
+1. **Established-session navigation concurrency** — can N already-
+   logged-in users browse the app (dashboard, course pages, materials,
+   grades, announcements — the same read-only paths Phases 1-3
+   benchmarked) concurrently without degrading? This is the actual
+   classroom-capacity question.
+2. **Login/authentication burst behavior** — a separate, narrower
+   question about Supabase Auth's own sign-in throughput and rate
+   limiting. `CLAUDE.md` already documents that this project's
+   integration-test suite has tripped Supabase Auth's rate limiter
+   under repeated runs — a load test that (1) needs to answer and (2)
+   accidentally also stress-tests would produce a confounded result,
+   exactly the failure mode the instruction called out. **The main
+   50-user test must not perform 50 fresh sign-ins.**
+
+### Harness design
+
+- **Session pre-establishment, once, outside the timed test.** Before
+  any concurrency stage, sign in a small, fixed pool of accounts once
+  each and capture their session cookies. The timed test itself only
+  ever replays already-authenticated navigation with those saved
+  cookies — no `signInWithPassword` calls occur during a concurrency
+  stage.
+- **Fixture accounts, not real students, enforced by
+  `scripts/perf/fixture-safety.mjs`'s `assertSyntheticAccount()` guard**
+  (Phase 3.5) — every session the harness pre-establishes is checked
+  against the same synthetic-pattern allowlist used everywhere else in
+  this pass. This project's actual synthetic pool
+  (`scripts/.dev-credentials.json`) currently has exactly **one**
+  reliably-synthetic student fixture (`dev-student@example.test`) plus
+  two timestamped disposable accounts (`studentB`, `tomorrowStudent`) —
+  **three real usable synthetic sessions, not fifty.** Simulating 50
+  *concurrent* users with 3 real accounts means either (a) running
+  multiple concurrent navigations *as* those 3 sessions (tests server-
+  side concurrency handling accurately, since Postgres/RLS/Auth all
+  key off the authenticated user regardless of how many physical
+  people that maps to) or (b) provisioning more synthetic accounts
+  first — **not done automatically by this pass**, same reasoning as
+  Phase 3.5's instructor-fixture gap: creating new accounts is a real,
+  human-reviewed provisioning decision. Documented here as a
+  prerequisite for the higher concurrency stages, not silently worked
+  around.
+- **Paths under test**: the same 8 read-only pages Phases 1-3 already
+  benchmarked (`/student`, `/student/courses`, course home, materials,
+  course/lecture list, assessments list, grades, announcements) — all
+  already proven not to mutate state, invoke AI, or touch grading.
+  Explicitly excluded, per instruction: the AI Tutor, Practice's AI
+  explanation path, starting/submitting any assessment attempt, any
+  instructor mutation, any enrollment change.
+- **Metrics recorded per stage**: p50/p95 navigation latency, error
+  rate (non-2xx and thrown exceptions), timeouts, full HTTP status
+  distribution, and any `429`/rate-limit response observed —
+  distinguished explicitly from ordinary latency so a rate-limit event
+  is never misread as "the server got slower."
+- **Abort condition**: the stage stops immediately (not "at the end")
+  if the error rate crosses a fixed threshold (proposed: >5% non-2xx
+  or any `429`) or p95 latency exceeds a fixed multiple of the 1-user
+  baseline (proposed: 5x) — checked continuously during the run, not
+  only in the final report.
+- **Progression**: 1 → 5 → 10 → 25 → 50 *concurrent navigations*, each
+  stage gated on the previous one finishing cleanly before the next
+  begins, exactly as specified.
+
+### 1-user local validation (executed this pass — proves the harness itself is safe, not classroom capacity)
+
+Built `scripts/perf/measure-baseline.mjs` back in Phase 1 already *is*
+this harness's 1-user case — same fixture, same tracked add/remove
+discipline, same 8 read-only paths, same non-mutation guarantees,
+already run (and re-run) many times over this entire document with
+zero incidents. No new code was needed to prove the pattern is safe at
+n=1; scaling it to concurrent instances (multiple Playwright contexts
+sharing the pre-established session cookies, run in parallel rather
+than sequentially) is the only structural change needed to reach n=5
+and beyond, and is a small, mechanical extension of an already-proven
+script — but per instruction, **that extension is designed here, not
+built and run against production**, since even a local 5-25-50
+concurrent run would need the local `next start` server to be
+representative of anything, and this pass's remaining time is better
+spent stopping cleanly than building an untested harness minutes before
+handing back control.
+
+### What the future production test will actually request — for your approval, not yet sent
+
+- 1 → 5 → 10 → 25 → 50 concurrent **already-authenticated** navigations
+  (cookies established once, beforehand, outside the timed window) to
+  the same 8 read-only, non-mutating, non-AI paths this document has
+  used throughout.
+- No new sign-ins during any timed stage.
+- No assessment starts/submissions, no AI calls, no enrollment/roster
+  changes, no material uploads.
+- Immediate abort on >5% error rate, any `429`, or p95 > 5x the 1-user
+  baseline.
+- Would run against the **production URL**
+  (`university-lms-tiferet.vercel.app`), since that's the only
+  environment that reflects real production latency/concurrency
+  behavior — explicitly **not started without your separate,
+  explicit go-ahead**, per the standing approval boundary.
 
 ---
 
@@ -761,12 +1032,33 @@ JS-disabled A/B verification run. Phase 2A from
 `scripts/perf/phase2b-results.json` and `phase2b-repeat-results.json`.
 Phase 3 from `scripts/perf/verify-nested-query.mjs` (pre-implementation
 equivalence check), `scripts/perf/phase3-results.json` and
-`phase3-repeat-results.json`. Working tree changes so far:
-`src/instrumentation.ts` (new, inert unless `PERF_DIAG=1`),
-`src/components/shell/course-context-bar.tsx` (`prefetch={false}` on
-the course nav links), `src/lib/supabase/course.ts`
-(`React.cache()`-wrapped identity resolution), `src/lib/domain/queries.ts`
-(`getCourseContent()` collapsed to one nested query), `scripts/perf/*`
-(new). Nothing committed yet. Stopped for review before Phase 4/5.
-No Vercel region, Supabase infrastructure, production deployment, or
-production data was changed at any point in this phase.*
+`phase3-repeat-results.json`. Phase 3.5 hardening in
+`scripts/perf/fixture-safety.mjs`. Phase 3.6 review verified via
+`scripts/perf/smoke-click-nav.mjs` plus full `tsc`/`eslint`/`build`.
+All code changes through Phase 3.6 are **committed** to local `main`
+(`22366fb`), not pushed, not deployed. Phase 4 (geography) is read-only
+analysis; Phase 5 (load-test design) was designed but its 5-50-user
+stages were not executed against production. No Vercel region, Supabase
+infrastructure, environment variable, production deployment, or
+production data was changed at any point across this entire document.*
+
+---
+
+## Final status (end of this pass)
+
+| Phase | Status |
+|---|---|
+| 1 — Measure | Done. Baseline established, prefetch amplification discovered and root-caused. |
+| 2A — Prefetch control | Done, verified, committed. |
+| 2B — Auth dedup | Done, verified, committed. Smaller/more page-dependent effect than expected — reported honestly. |
+| 3 — Query collapse | Done, verified (both roles, before and after implementation), committed. One incident during verification, disclosed immediately. |
+| 3.5 — Harness hardening | Done. Removed the real-account dependency; added reusable guards against recurrence. |
+| 3.6 — Review and checkpoint | Done. Full diff reviewed against 8 specific risk categories; one test-methodology bug found and fixed (click-nav wait logic), zero app defects found. |
+| 4 — Geography analysis | Done, read-only. Clear recommendation produced (Topology C), not executed. |
+| 5 — Load-test design | Done, designed. 1-user harness already proven safe (it's Phase 1's own script). 5-50-user production stages **await your explicit approval**. |
+
+**Nothing in this entire pass changed Vercel configuration, Supabase
+infrastructure, environment variables, or production deployment state.**
+The one real-world side effect was disclosed the moment it was found
+(Phase 3's instructor-account sign-out) and has since been structurally
+prevented from recurring (Phase 3.5).
