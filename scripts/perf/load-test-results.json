@@ -1,0 +1,91 @@
+{
+  "baseUrl": "https://university-lms-tiferet.vercel.app",
+  "stages": [
+    {
+      "concurrency": 1,
+      "requestCount": 1,
+      "successCount": 1,
+      "errorCount": 0,
+      "errorRate": 0,
+      "count429": 0,
+      "countTimeouts": 0,
+      "count5xx": 0,
+      "statusDistribution": {
+        "200": 1
+      },
+      "p50": 1380.3954999999996,
+      "p95": 1380.3954999999996,
+      "max": 1380.3954999999996,
+      "min": 1380.3954999999996
+    },
+    {
+      "concurrency": 5,
+      "requestCount": 5,
+      "successCount": 5,
+      "errorCount": 0,
+      "errorRate": 0,
+      "count429": 0,
+      "countTimeouts": 0,
+      "count5xx": 0,
+      "statusDistribution": {
+        "200": 5
+      },
+      "p50": 1178.3639999999978,
+      "p95": 1384.881400000002,
+      "max": 1384.881400000002,
+      "min": 1057.3860999999997
+    },
+    {
+      "concurrency": 10,
+      "requestCount": 10,
+      "successCount": 10,
+      "errorCount": 0,
+      "errorRate": 0,
+      "count429": 0,
+      "countTimeouts": 0,
+      "count5xx": 0,
+      "statusDistribution": {
+        "200": 10
+      },
+      "p50": 1017.1239999999962,
+      "p95": 1166.1959999999963,
+      "max": 1166.1959999999963,
+      "min": 877.1203000000023
+    },
+    {
+      "concurrency": 25,
+      "requestCount": 25,
+      "successCount": 25,
+      "errorCount": 0,
+      "errorRate": 0,
+      "count429": 0,
+      "countTimeouts": 0,
+      "count5xx": 0,
+      "statusDistribution": {
+        "200": 25
+      },
+      "p50": 1223.686600000001,
+      "p95": 1685.4781999999977,
+      "max": 1695.5438000000067,
+      "min": 939.5097999999998
+    },
+    {
+      "concurrency": 50,
+      "requestCount": 50,
+      "successCount": 50,
+      "errorCount": 0,
+      "errorRate": 0,
+      "count429": 0,
+      "countTimeouts": 0,
+      "count5xx": 0,
+      "statusDistribution": {
+        "200": 50
+      },
+      "p50": 8790.751100000009,
+      "p95": 10157.716400000005,
+      "max": 10501.056200000006,
+      "min": 1887.6589000000095
+    }
+  ],
+  "baselineP50": 1380.3954999999996
+}

@@ -13,7 +13,7 @@ import { assertSyntheticAccount } from "./fixture-safety.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 process.loadEnvFile(path.resolve(__dirname, "../../.env.local"));
-const BASE_URL = "http://localhost:3100";
+const BASE_URL = process.env.PERF_BASE_URL || "http://localhost:3100";
 const CSE_1203 = "11111111-1111-1111-1111-111111111111";
 const creds = JSON.parse(await readFile(path.resolve(__dirname, "../../scripts/.dev-credentials.json"), "utf-8"));
 assertSyntheticAccount(creds.student.email);

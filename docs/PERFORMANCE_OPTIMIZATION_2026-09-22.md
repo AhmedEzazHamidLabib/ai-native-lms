@@ -6,14 +6,19 @@ after each phase's measurements are in hand — per instruction, measured
 results take precedence over the prior diagnostic's code-reading
 estimates wherever they disagree.
 
-**Status: Phases 1, 2A, 2B, 3, 3.5, and 3.6 complete and committed.**
-Phase 4 (geography analysis, read-only) and Phase 5 (load-test design,
-not executed against production) follow below. No production
-infrastructure, Vercel region, Supabase project, environment variable,
-or deployment was changed at any point. No student/course data was
-mutated (the one recurring write — a temporary `course_members` row for
-the `dev-student` fixture — was added and removed within every script
-run, verified after each one).
+**Status: COMPLETE. Production is cut over to `syd1` (Sydney), verified
+healthy, and load-tested through 1→5→10→25→50 concurrent authenticated
+navigations.** Phases 1 through 6 (measure, prefetch control, auth
+dedup, query collapse, harness hardening, geography experiment,
+production cutover, and staged load test) are all done, measured, and
+committed. Supabase was never touched at any point — no migration, no
+region change, no credential rotation, no schema/RLS change. No
+student/course data was mutated (the one recurring write — a temporary
+`course_members` row for the `dev-student` fixture — was added and
+removed within every script run across every phase, independently
+verified by direct database query after each one, including every run
+in the final production/load-test phase). See "Phase 6" near the end
+of this document for the production cutover and load-test results.
 
 ---
 
@@ -1268,8 +1273,307 @@ production data was changed at any point across this entire document.*
 | 4 — Geography analysis | Done, read-only. Clear recommendation produced (Topology C), not executed. |
 | 5 — Load-test design | Done, designed. 1-user harness already proven safe (it's Phase 1's own script). 5-50-user production stages **await your explicit approval**. |
 
-**Nothing in this entire pass changed Vercel configuration, Supabase
-infrastructure, environment variables, or production deployment state.**
-The one real-world side effect was disclosed the moment it was found
-(Phase 3's instructor-account sign-out) and has since been structurally
-prevented from recurring (Phase 3.5).
+**Status as of the previous checkpoint: nothing had changed Vercel
+configuration, Supabase infrastructure, environment variables, or
+production deployment state.** The one real-world side effect was
+disclosed the moment it was found (Phase 3's instructor-account
+sign-out) and has since been structurally prevented from recurring
+(Phase 3.5). **This changed in the final phase below**, with explicit
+authorization: production was cut over to `syd1`.
+
+---
+
+## Phase 6 — Production Sydney cutover, verification, and staged load test
+
+### Pre-cutover safety check
+
+- Working tree clean, on `main`, both performance commits
+  (`22366fb`, `46ababc`) present.
+- `perf/sydney-preview` diffed against `main`: **documentation and
+  result JSON only** — zero application code, zero `vercel.json`. The
+  Preview experiment's region pin was always CLI-only
+  (`--regions syd1`, never committed), by design — confirmed nothing
+  unexpected would enter Production via a merge.
+- Fast-forward merge only (`perf/sydney-preview` was a direct
+  descendant of `main`'s tip — no conflicts, no reconciliation
+  needed).
+- `npx tsc --noEmit`: clean. `npx eslint .`: one stray finding traced
+  to `.vercel/output/` — leftover debris from an earlier failed local
+  `vercel build` attempt (Windows blocks the symlinks Vercel's build
+  output uses without elevated permissions — a local-environment
+  limitation, not a code issue). Removed `.vercel/output` and `.next`,
+  re-ran clean (only the pre-existing, out-of-scope
+  `practice-session.tsx` finding remains). `npx next build`: clean.
+- `src/instrumentation.ts` confirmed unchanged since its original
+  commit, still gated on `PERF_DIAG === "1"`; `PERF_DIAG` is not among
+  Production's configured environment variables, so it stays inert on
+  the cutover deployment.
+- Production recorded **before** any change: `dpl_CUUN61wSmPnwzpwCjjT1xvMbnZxR`,
+  target `production`, region `iad1`, status Ready — **this is the
+  rollback target**.
+- Supabase environment variables reconfirmed unchanged (same 4
+  variables, same "Production"-only scope, same age, no values
+  printed).
+
+Nothing differed materially from the verified Preview experiment —
+proceeded.
+
+### Applying the verified configuration
+
+Created `vercel.json` at the repo root:
+
+```json
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["syd1"]
+}
+```
+
+Committed to `main` (`3934f8a`). Unlike the Preview experiment, a
+*committed* region pin is correct here — this project's production
+deploys are manual (`vercel --prod`, never triggered by a push or
+merge — `ARCHITECTURE_HANDOFF.md` §14), so this file only takes effect
+on the next deliberate production deployment. No Supabase file or
+configuration was touched.
+
+### Production cutover
+
+`vercel deploy --prod --yes` → new deployment `dpl_7vt3bdsA1JtWbGTzqjHwhyH8U2B8`,
+`readyState: READY`. **Independently verified, not taken on the
+deploy command's word alone:**
+
+| Check | Result |
+|---|---|
+| `vercel inspect` on the new deployment | `target: production`, `status: Ready` |
+| Function region (build output) | `[syd1]` on every listed function |
+| `X-Vercel-Id` header on the live production domain | `bom1::syd1::...` |
+| Domain alias resolution | Both `university-lms-tiferet.vercel.app` and `university-lms-three.vercel.app` resolve to the new deployment ID |
+| Supabase project | Unchanged — same pooler hostname (`aws-0-ap-southeast-2.pooler.supabase.com`), same project ref |
+| Environment variables | Unchanged — same 4 variables, same scope, same age |
+| Previous production deployment | Still present and independently inspectable (`dpl_CUUN61wSmPnwzpwCjjT1xvMbnZxR`) — rollback target intact |
+
+### Immediate smoke test (Step 4)
+
+Synthetic `dev-student@example.test` fixture only, tracked
+add/verify-remove membership discipline (confirmed removed after every
+run below). Against the **real production domain**:
+
+- All 8 benchmarked pages (dashboard, available courses, course home,
+  materials, course/content, assessments list, grades, announcements)
+  loaded successfully — confirmed via `scripts/perf/measure-baseline.mjs`
+  completing without error and via a separate direct content check
+  (materials page shows the real course title "CSE 1203 · Introduction
+  to Computing" and real material title "Course presentation"; all
+  document responses `200`).
+- Click-based navigation (not just direct URL loads) re-verified against
+  production with `scripts/perf/smoke-click-nav.mjs` (extended to accept
+  `PERF_BASE_URL`): **4/4** sidebar links (Materials, Grades,
+  Announcements, Calendar) navigated correctly via real `<Link>` clicks
+  — `prefetch={false}` confirmed not to have broken navigation in
+  production.
+- The Phase 3 nested `getCourseContent()` query renders correctly
+  (course/content page content verified directly).
+- Login worked via the real `/login` form with the synthetic fixture
+  only — no real account touched.
+- No AI request occurred (only `/auth/v1/*` and `/rest/v1/*` paths
+  appear anywhere in this phase's activity; `/tutor` was never
+  visited).
+- No assessment started or submitted (only the read-only list page was
+  visited).
+- Fixture cleanup independently verified via direct database query
+  after every run in this phase, not just trusted from script output.
+
+### Post-cutover performance verification (Step 5)
+
+TTFB was **not** used as the primary comparison metric, per the
+Preview experiment's own finding that it isn't a reliable signal
+against a real Vercel deployment. Wall time was compared instead,
+against the same-methodology Virginia Preview control from the
+executed Phase 4 experiment (identical code, real remote requests —
+the only valid apples-to-apples baseline; Phase 1-3's local-loopback
+numbers use a different measurement method entirely and were not
+directly compared here):
+
+| Page | Production (`syd1`, 3 samples avg) | Sydney Preview (2 samples avg) | Virginia Preview control (2 samples avg) | Reduction vs. Virginia |
+|---|---:|---:|---:|---:|
+| dashboard | 3870ms | 3848ms | 5517ms | 30% |
+| available-courses | 3660ms | 3838ms | 7270ms | 50% |
+| course-home | 3430ms | 3725ms | 5856ms | 41% |
+| materials | 4010ms | 4373ms | 6785ms | 41% |
+| course-content | 4157ms | 4687ms | 5578ms | 25% |
+| assessments-list | 4983ms | 5113ms | 7055ms | 29% |
+| grades | 3493ms | 3168ms | 4991ms | 30% |
+| announcements | 3145ms | 3532ms | 5224ms | 40% |
+
+**Production tracks the Sydney Preview closely** (within normal
+run-to-run variance) and both sit well below the Virginia control —
+confirming the Preview experiment's result reproduces in real
+production, not just in an isolated sandbox.
+
+**On the ~284ms → ~26ms per-call figure specifically**: this was
+captured via `PERF_DIAG` instrumentation in the Preview experiment.
+`PERF_DIAG` was deliberately **not** added to the production
+deployment for this cutover (avoiding an unnecessary extra production
+configuration change beyond the region pin itself), and Vercel's
+native `vercel logs` stream showed no application-level request
+logging without it — confirmed by direct test (started a log
+follower, ran a full benchmark pass, zero lines captured). So this
+exact number was **not** independently re-measured against production
+itself. Reporting this gap honestly rather than implying it was
+re-confirmed: the wall-time evidence above is strong indirect
+confirmation the same mechanism is active (Production and the Sydney
+Preview differ in no way that would affect this metric), but the
+precise per-call figure is a Preview-only measurement.
+
+### Gate check (Step 6) — all conditions met, proceeded to load test
+
+- Production confirmed in `syd1`: yes (three independent confirmations).
+- Smoke tests pass: yes (8/8 pages, 4/4 click-navigations).
+- No functional regression: yes (content verified correct).
+- No security/auth regression: yes (RLS/session behavior unchanged,
+  same login path, same fixture-only testing discipline).
+- Fixture cleanup verified: yes (independently, by direct query, after
+  every run).
+- No unexpected 4xx/5xx: yes (zero non-200 responses throughout).
+- Sydney performance advantage still observable: yes (25-50% wall-time
+  reduction vs. the Virginia control, consistent with the Preview
+  experiment).
+
+### Staged load test (Step 7) — built, and an artifact caught and corrected along the way
+
+Built `scripts/perf/load-test.mjs`: establishes **one** real
+authenticated session via the actual `/login` form (synthetic
+`dev-student` fixture, tracked membership discipline) **once**,
+outside any timed window, extracts its cookies, then fires concurrent
+`fetch()` requests carrying those cookies at each stage — no further
+sign-ins occur during any timed stage, per instruction. Cycles across
+the same 8 read-only pages every prior phase benchmarked. A response
+is only counted as success on an exact `200` — a `3xx` (which would
+mean the reused session was rejected and the request got bounced
+toward `/login`) counts as a failure, not a pass.
+
+**An unexpected finding required investigation before any result could
+be trusted, exactly the kind of thing not to paper over:**
+
+1. **First run** (Node's default global `fetch` connection pool): the
+   50-concurrent stage showed `p95: 14827ms`, 1 timeout — triggering
+   the abort condition. This looked like a real capacity ceiling.
+2. **Investigated rather than accepted**: ran the identical 50-request
+   burst in isolation with an explicit, adequately-sized connection
+   pool (`undici.Agent({ connections: 200 })`) instead of Node's
+   default. Result: **50/50 success, p95 3498ms** — no timeout at all.
+   This is conclusive, not circumstantial: same server, same
+   concurrency, different client-side dispatcher, dramatically
+   different result. **The original "ceiling" was the test harness's
+   own default connection pool being too small for 50 concurrent
+   requests to one origin, not a production limit.** Fixed
+   `load-test.mjs` to set this dispatcher globally, sized well above
+   the largest tested stage.
+3. **Re-ran the full staged script with the fix**: worse this time —
+   50-concurrent showed **72% error rate**, 36 timeouts,
+   `p95: 15051ms`. Investigated again rather than concluding "still
+   broken": this run's stage 50 fired immediately after stages
+   1+5+10+25 (41 requests) had *just* completed, with no recovery
+   gap — different from the clean isolated retest in step 2 above.
+   Tested an isolated 50-burst again (5s gap, otherwise identical):
+   succeeded, 50/50, but slower than the very first isolated test
+   (`p50: 7956ms` vs. `2929ms`) — a real, reproducible sign that
+   *repeated* concurrent bursts in quick succession compound, whether
+   or not the client-side pool is adequate.
+4. **Added a 15s cooldown between stages** to separate "can this
+   concurrency level work" from "does zero-recovery-time back-to-back
+   bursting cause pileup" — these are different, both real questions,
+   and conflating them would have produced a misleading single number.
+   This became the final, trusted run.
+
+### Final load-test results (with adequate connection pool + inter-stage cooldown)
+
+| Concurrency | p50 | p95 | Max | Success | Error rate | 429s | Timeouts | 5xx |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 1380ms | 1380ms | 1380ms | 1/1 | 0% | 0 | 0 | 0 |
+| 5 | 1178ms | 1385ms | 1385ms | 5/5 | 0% | 0 | 0 | 0 |
+| 10 | 1017ms | 1166ms | 1166ms | 10/10 | 0% | 0 | 0 | 0 |
+| 25 | 1224ms | 1685ms | 1696ms | 25/25 | 0% | 0 | 0 | 0 |
+| 50 | 8791ms | 10158ms | 10501ms | 50/50 | 0% | 0 | 0 | 0 |
+
+Raw output: `scripts/perf/load-test-results.json`.
+
+**Abort status**: the p95-vs-baseline threshold (p95 > 5x the
+stage-1 p50) triggered *after* stage 50 completed — correctly, since
+10158ms is indeed >5x the 1380ms baseline — but 50 was already the
+final configured stage, so this didn't cut anything short. No error-
+rate or 429/timeout/5xx threshold was ever crossed in this final run.
+
+## Step 8 — Interpreting capacity, not just pass/fail
+
+**1 through 25 concurrent: flat and healthy.** p50 stays in a tight
+~1000-1400ms band, p95 never exceeds ~1700ms, zero errors anywhere in
+this range. There is no visible degradation trend across 1→5→10→25 —
+whatever headroom the system has, 25 simultaneous authenticated
+navigations sit comfortably inside it.
+
+**50 concurrent: a real, distinct step change, not a gradual slope.**
+Latency jumps roughly 6-9x (from ~1200-1700ms to ~8800-10200ms)
+between the 25 and 50 stages — there is no intermediate data point
+(the design didn't test 35 or 40), so whether this is a smooth curve
+that happens to cross a visible threshold around 50, or a genuine
+step function tied to some specific resource limit (most consistent
+with a connection-pool-style constraint — Supabase's pooler, or Vercel
+function instance concurrency — given the multi-second, queue-like
+character of the delay rather than a proportional compute slowdown),
+was not distinguished by this test design. **Zero errors, zero
+timeouts, zero rate-limiting were observed at 50** — every request
+eventually succeeded — so this is a *latency* finding, not an
+*availability* finding.
+
+**Is 50-student classroom usage "healthy" under this tested workload?**
+Qualified yes, with an honest caveat: if 50 students happened to
+request a page at the *exact same instant*, the measured experience
+would be an 8-10 second wait instead of ~1-2 seconds — noticeably slow,
+but not broken, erroring, or rate-limited. Real classroom usage is
+virtually never 50 literally-simultaneous clicks (natural staggering
+from students reading, thinking, and clicking at slightly different
+times spreads real load out over many seconds), so this specific test
+represents a *more concentrated* burst than most real classroom
+moments — meaning actual experienced latency during a real class is
+plausibly better than this worst-case number, though this was not
+separately tested and shouldn't be asserted as measured fact.
+
+**What this does not prove**: this is a classroom-capacity signal, not
+a general scalability claim. It says nothing about sustained load over
+an hour, nothing about literally 100+ concurrent users, and nothing
+about behavior once the AI Tutor or assessment submission (both
+explicitly excluded from this read-only test) are added to the mix.
+
+**Remaining known limitation**: the specific bottleneck behind the
+50-concurrent slowdown was not isolated to a single root cause in this
+pass (Supabase pooler capacity is the leading candidate given the
+queue-like latency signature, but Vercel Fluid Compute instance
+scale-up under a sudden burst was not ruled out either) — flagged as
+the natural next investigation if 50+-concurrent performance needs to
+improve further, rather than guessed at here.
+
+### Cleanup (Step 9)
+
+- Fixture `course_members` row: confirmed removed via direct database
+  query after every run in this phase (smoke test, click-nav test,
+  content-verification run, both load-test executions, both isolated
+  diagnostic bursts) — never left present.
+- No stray `attempts` or other application data created for the
+  `dev-student` fixture (checked directly).
+- Production left in `syd1` — confirmed healthy (`200` on `/login`,
+  correct region header) as of the last check in this phase.
+- Previous production deployment (`dpl_CUUN61wSmPnwzpwCjjT1xvMbnZxR`,
+  `iad1`) preserved and independently inspectable as the rollback
+  reference — not deleted.
+- Preview/control deployments from the Phase 4 experiment
+  (`university-qk8c407n4-tiferet.vercel.app`,
+  `university-l4greb9h6-tiferet.vercel.app`,
+  `university-nmgqy6dx7-tiferet.vercel.app`) left in place, undocumented
+  for deletion — no concrete reason to remove them yet.
+- Supabase: untouched throughout — no migration, no region change, no
+  credential rotation, no schema/RLS change.
+- **No rollback occurred.** Production remained healthy throughout;
+  the rollback path (`vercel rollback` / re-promoting
+  `dpl_CUUN61wSmPnwzpwCjjT1xvMbnZxR`) was never exercised, only kept
+  ready.
