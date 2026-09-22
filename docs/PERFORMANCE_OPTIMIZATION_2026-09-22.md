@@ -876,6 +876,217 @@ insufficient — which current evidence gives no reason to expect.
 
 ---
 
+## Phase 4 experiment — executed: Sydney Preview vs. Virginia Preview
+
+The recommendation above was carried out, on branch `perf/sydney-preview`
+(no functional code changes — see `docs/PERF_SYDNEY_PREVIEW_EXPERIMENT.md`
+for why no `vercel.json` was committed). **Production was never touched**;
+confirmed by deployment ID before and after
+(`dpl_CUUN61wSmPnwzpwCjjT1xvMbnZxR`, target `production`, region
+`iad1` — identical at the start and end of this experiment).
+
+### Setup
+
+- **Sydney Preview**: `https://university-qk8c407n4-tiferet.vercel.app`
+  (`dpl_5UzFutTeAebRvDECzrNmYqNYUP9V`) — `vercel deploy --regions syd1`,
+  target `preview` (confirmed via `vercel inspect`), function region
+  `syd1` (confirmed via `vercel inspect`'s build output **and**
+  independently via the `X-Vercel-Id: bom1::syd1::...` response
+  header — two independent confirmations).
+- **Virginia control Preview**: `https://university-l4greb9h6-tiferet.vercel.app`
+  (`dpl_2ytCb5McPcByteTHhWJTy6egTFnm`) — identical code,
+  `vercel deploy --regions iad1`, added specifically to isolate region
+  as the only variable (see "an unexpected finding," below, for why
+  this became necessary rather than optional).
+- Both deployments: Supabase connectivity supplied via `vercel deploy`'s
+  per-deployment `-b`/`-e` flags (`NEXT_PUBLIC_SUPABASE_URL`,
+  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — the same non-secret,
+  non-rotated values Production already uses), **never persisted to
+  the project's Preview environment scope** in the dashboard and never
+  written to any committed file. `SUPABASE_SECRET_KEY` was not needed
+  or supplied — confirmed by grep that no page under test touches the
+  service-role/admin client.
+- `PERF_DIAG=1` also supplied per-deployment (same mechanism), enabling
+  `src/instrumentation.ts`'s existing fetch-logging hook so
+  `vercel logs <deployment-id> --follow` could capture the same
+  per-call Supabase timing data Phases 1-3 used locally — this time
+  from the actual deployed function.
+- Benchmarked with the **unmodified** `scripts/perf/measure-baseline.mjs`
+  harness (same dev-student fixture, same tracked add/remove
+  membership discipline, same 8 pages), pointed at each Preview URL via
+  `PERF_BASE_URL`. Verified clean afterward on every run.
+- 2 repetitions per region (8 pages × 2 = 16 timed navigations per
+  region) to separate signal from noise, same discipline as Phases 2B/3.
+
+### An unexpected finding, investigated rather than assumed
+
+The first Sydney run showed TTFB around **70-90ms** — startlingly low
+compared to this document's local-loopback Phase 1-3 numbers
+(~1300-2800ms) — while wall time stayed at several seconds. That
+mismatch (TTFB ≪ wall time, a much bigger gap than local testing ever
+showed) was not accepted at face value. Deploying the Virginia control
+and testing it the *same* way revealed **an identical pattern** —
+TTFB ~64-152ms regardless of region. Conclusion: **TTFB, as captured by
+the Navigation Timing API against a real Vercel deployment, is not a
+reliable proxy for this app's actual data-readiness time** — most
+likely Next.js flushing initial response bytes before the page's own
+server-side data fetching resolves. This is a testing-methodology
+finding, not a Sydney-specific one, and it invalidates any direct
+comparison between this experiment's TTFB numbers and Phases 1-3's
+local-loopback TTFB numbers — they are not measuring the same thing.
+**Wall time and, especially, the raw per-call Supabase latency
+(below) are the metrics actually trusted for this experiment's
+conclusion.**
+
+### The core result: per-call Supabase latency
+
+Captured directly from each deployment's own function logs
+(`vercel logs <id> --follow`, piped to a file, cross-referenced against
+`src/instrumentation.ts`'s `PERF_DIAG` lines) — this is the real,
+measured Vercel-function-to-Supabase latency this document's Phase 4
+section could not obtain locally:
+
+| | Sydney function → Sydney Supabase | Virginia function → Sydney Supabase |
+|---|---:|---:|
+| Calls captured | 98 | 74 |
+| Median (all calls) | **26ms** | **284ms** |
+| Median (`auth.getUser()`) | 21ms | 282ms |
+| Median (REST) | 47ms | 286ms |
+| Non-200 responses | **0** | **0** |
+
+**~11x reduction in median per-call backend latency** from co-locating
+compute with the database — this is the mechanism Phase 4's
+(un-executed, at the time) recommendation predicted, now directly
+measured rather than estimated from a published inter-region figure.
+
+### Wall time, both repetitions
+
+| Page | Sydney avg (2 runs) | Virginia avg (2 runs) | Reduction |
+|---|---:|---:|---:|
+| dashboard | 3848ms | 5517ms | 30% |
+| available-courses | 3838ms | 7270ms | 47% |
+| course-home | 3725ms | 5856ms | 36% |
+| materials | 4373ms | 6785ms | 36% |
+| course-content | 4687ms | 5578ms | 16% |
+| assessments-list | 5113ms | 7055ms | 28% |
+| grades | 3168ms | 4991ms | 37% |
+| announcements | 3532ms | 5224ms | 32% |
+
+Sydney was faster on **every single page, on every single run** (16 of
+16 timed navigations) — not a mixed or noisy result. Reduction ranges
+16-47%, averaging ~33%.
+
+### Functional verification (Step 3/4 requirements)
+
+- All 98 Sydney-side Supabase calls returned HTTP 200 — zero errors.
+- Call-path breakdown confirms Phase 3's query collapse is intact on
+  this deployment: exactly 3 `/rest/v1/courses` calls total, matching
+  the 3 benchmarked pages that call `getCourseContent()`
+  (course-home, materials, course-content) — and critically, **zero**
+  separate `/rest/v1/units`, `/rest/v1/lectures`,
+  `/rest/v1/materials`, or `/rest/v1/material_versions` calls, meaning
+  the nested embed (not the old 5-query path) is what actually ran.
+- Directly inspected rendered page content (not just HTTP status): the
+  materials page shows the real course title ("CSE 1203 · Introduction
+  to Computing") and real material titles ("Course presentation"); the
+  grades page renders correctly. Not an error boundary, not a blank
+  page.
+- Login worked via the synthetic `dev-student@example.test` fixture
+  only — no real account was used or touched this phase.
+- No AI call: only `/auth/v1/*` and `/rest/v1/*` paths appear anywhere
+  in the captured logs.
+- No mutation beyond the same temporary, tracked, verified-removed
+  `course_members` fixture row every prior phase has used.
+- Deployment protection: none active on either Preview — both were
+  reachable directly, no Vercel SSO/auth wall needed.
+
+### Classification (per the requested A/B/C framework)
+
+**A — Sydney produces a large, consistent improvement.** Not a
+borderline or mixed call: 30-47% wall-time reduction on 7 of 8 pages
+(16% on the eighth), 11x lower median backend latency, zero errors,
+zero regressions, reproduced across two independent runs. Recommending
+region cutover **as the next reviewed step** — not executing it
+autonomously, per the standing approval boundary.
+
+### Where the latency moved
+
+Before this experiment, this document's working theory (Phase 4,
+pre-execution) was that the ~1300-1400ms local-loopback TTFB floor was
+"dominated by fixed per-call network latency to `ap-southeast-2`."
+That's now directly confirmed, quantified, and shown to be almost
+entirely a *region* effect, not a fundamental floor: the same code,
+the same query shapes, the same number of round trips, dropped from a
+284ms median per call to a 26ms median per call purely by moving the
+compute 1,400km from Sydney instead of 15,000km. Wall time didn't drop
+by the same 11x factor because wall time also includes real,
+region-independent costs (TLS/connection setup per request, actual
+Postgres query execution time, this testing machine's own network path
+to whichever Vercel edge PoP received the request) — but the
+*repeated, sequential* component of the waterfall, the one Phases
+2A/2B/3 already worked hard to shrink from 5+ calls down to 2-3, is
+exactly the part region proximity multiplies or divides.
+
+### Does the evidence still support leaving Supabase in Sydney?
+
+**Yes, more strongly than before.** Topology D (migrate Supabase to
+Singapore too) was never justified by the evidence and still isn't:
+Topology C just *measured* an 11x per-call latency win from a
+Vercel-only change, at zero data-migration risk. There is no
+remaining case for touching Supabase's region.
+
+### Prepared production-cutover plan — NOT executed, awaiting separate approval
+
+Sydney clearly won (Classification A), so this is prepared in full per
+instruction. **Nothing below has been run.**
+
+1. **Configuration change.** Add `"regions": ["syd1"]` to a new
+   `vercel.json` at the repo root — this time as a *committed* setting
+   is appropriate, since we now specifically want it to apply to the
+   production deployment (unlike the Preview experiment, where a
+   committed project-wide setting was the exact risk being avoided).
+   Review the diff before committing; nothing else in `vercel.json`.
+2. **Deployment/redeploy step.** `vercel deploy --prod` from a clean,
+   reviewed `main` (after merging `perf/sydney-preview`'s branch notes
+   or simply committing the `vercel.json` directly to `main`). This
+   project's production deploys are already manual/CLI-only
+   (`ARCHITECTURE_HANDOFF.md` §14) — this is the same process already
+   documented in `docs/PRODUCTION_RUNBOOK.md`, with one added flag.
+3. **Immediate smoke tests** (same shape as `docs/PRODUCTION_RUNBOOK.md`'s
+   existing health check, extended slightly):
+   - `curl -s -o /dev/null -w '%{http_code}' https://university-lms-tiferet.vercel.app/login` → expect `200`.
+   - `vercel inspect <new-production-url>` → confirm `target: production`
+     and function region `syd1` (exactly the check used throughout this
+     experiment).
+   - One real login as the synthetic `dev-student` fixture, one course
+     page load, confirm no error, confirm `X-Vercel-Id` shows `::syd1::`.
+   - Confirm the AI Tutor, assessments, and grading still work
+     end-to-end for at least one non-mutating read path (these weren't
+     touched by the region change, but a region cutover is exactly the
+     kind of deploy where "nothing *should* have changed" deserves a
+     real check, not just an assumption).
+4. **Rollback procedure.** Trivial and fast: `vercel rollback` (per
+   `docs/PRODUCTION_RUNBOOK.md`'s own documented pattern) reverts to the
+   immediately prior production deployment (`dpl_CUUN61wSmPnwzpwCjjT1xvMbnZxR`,
+   `iad1`) instantly, no rebuild — the same instant-revert property that
+   made this whole experiment low-risk in the first place. No data-layer
+   rollback is needed at any point, since Supabase is never touched.
+5. **Post-cutover benchmark.** Re-run `scripts/perf/measure-baseline.mjs`
+   against the real production URL (not a Preview) once cutover is live,
+   and compare against both this experiment's Sydney-Preview numbers
+   (expect close agreement) and the pre-cutover Virginia-production
+   baseline — closing the loop with a real, not simulated, production
+   measurement.
+6. **When to run the staged 1→5→10→25→50 load test**: *after* cutover
+   and its post-deploy benchmark are both confirmed clean, not before —
+   the load test's purpose (per Phase 5) is validating classroom-scale
+   concurrency, which should be tested against whichever topology is
+   actually going to serve the real class, not the one about to be
+   replaced. Still requires your separate, explicit approval regardless
+   of cutover outcome, per the standing boundary.
+
+---
+
 ## Phase 5 — Load test design
 
 Design only — **the 10/25/50-user stages are not run against
