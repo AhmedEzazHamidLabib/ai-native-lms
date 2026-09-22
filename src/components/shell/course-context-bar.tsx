@@ -92,6 +92,15 @@ export function CourseContextBar({
             <Link
               key={section.label}
               href={section.href}
+              // This bar renders up to 13 links on every course page, all
+              // dynamic (auth-gated) routes — Next.js's default viewport
+              // prefetch was silently re-running the auth/layout chain for
+              // every one of them in the background (measured: 31 vs 2
+              // auth.getUser() calls per pageview with prefetch on vs off,
+              // docs/PERFORMANCE_OPTIMIZATION_2026-09-22.md Phase 2A).
+              // false disables viewport AND hover prefetch in the App
+              // Router (unlike the Pages Router) — fetches only on click.
+              prefetch={false}
               aria-current={isActive ? "page" : undefined}
               className={cn(
                 "shrink-0 px-3 py-2 text-sm rounded-t-md border-b-2 transition-colors duration-[180ms] whitespace-nowrap font-medium tracking-wide",
@@ -121,6 +130,7 @@ export function CourseContextBar({
               <Link
                 key={tab.href}
                 href={tab.href}
+                prefetch={false}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "shrink-0 text-sm pb-1 border-b-2 transition-colors duration-[180ms] whitespace-nowrap",

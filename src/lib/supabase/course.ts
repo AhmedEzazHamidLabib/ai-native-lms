@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { createClient } from "./server";
 import type { CourseRole } from "./database.types";
 
@@ -7,12 +8,29 @@ export interface CurrentUser {
   email: string | null;
 }
 
-/** Authentication only — "is anyone signed in," no role resolution. */
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+/**
+ * The one place in this file that actually calls `auth.getUser()` — a
+ * real network round trip to Supabase Auth, not a free cookie decode.
+ * `React.cache()` memoizes it per request/render: every helper below
+ * still gets a freshly server-verified user, just resolved once per
+ * request instead of once per helper (measured: up to 4 redundant
+ * `getUser()` calls for a single page render before this — see
+ * docs/PERFORMANCE_OPTIMIZATION_2026-09-22.md Phase 2B). This is scoped
+ * to Server Component rendering only — `src/proxy.ts`'s own check runs
+ * in a separate execution context (middleware) and is deliberately left
+ * independent, never trusting this cache or a client-supplied identity.
+ */
+const getVerifiedUser = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  return user;
+});
+
+/** Authentication only — "is anyone signed in," no role resolution. */
+export async function getCurrentUser(): Promise<CurrentUser | null> {
+  const user = await getVerifiedUser();
   if (!user) return null;
   return { id: user.id, email: user.email ?? null };
 }
@@ -25,9 +43,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
  */
 export async function getMyFullName(): Promise<string | null> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getVerifiedUser();
   if (!user) return null;
   // Must filter to the caller's own row: an instructor's profiles RLS
   // visibility also includes every student's profile in their courses
@@ -94,10 +110,7 @@ export async function getCourseMembership(
   courseId: string,
 ): Promise<CourseMembership | null> {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getVerifiedUser();
   if (!user) return null;
 
   // Must filter by user_id explicitly, not just course_id — an
@@ -131,10 +144,7 @@ export async function getCourseMembership(
 /** Every course this user belongs to (any role) — powers "My Courses." */
 export async function getMyCourses(): Promise<CourseMembership[]> {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getVerifiedUser();
   if (!user) return [];
 
   // Same reason as getCourseMembership: an instructor's RLS visibility
@@ -225,10 +235,7 @@ export interface CourseWithStatus extends CourseSummary {
 /** The full catalog, each course annotated with this user's relationship to it — powers "Available Courses." */
 export async function getAllCoursesWithStatus(): Promise<CourseWithStatus[]> {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getVerifiedUser();
   if (!user) return [];
 
   const { data: courses, error } = await supabase

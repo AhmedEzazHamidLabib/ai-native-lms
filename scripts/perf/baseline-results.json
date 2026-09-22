@@ -1,0 +1,1388 @@
+[
+  {
+    "name": "dashboard",
+    "path": "/student",
+    "wallStart": 1790070145574,
+    "wallEnd": 1790070149924,
+    "wallMs": 4350,
+    "ttfbMs": 2182,
+    "domContentLoadedMs": 2213,
+    "supabaseCallCount": 17,
+    "authGetUserCount": 15,
+    "totalSupabaseMs": 9930,
+    "callsByPath": {
+      "/auth/v1/user": 15,
+      "/rest/v1/profiles": 1,
+      "/rest/v1/course_members": 1
+    },
+    "calls": [
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 436,
+        "t": 1790070145873
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 445,
+        "t": 1790070145885
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 428,
+        "t": 1790070146332
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 431,
+        "t": 1790070146350
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 1276,
+        "t": 1790070146721
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 1266,
+        "t": 1790070146851
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 418,
+        "t": 1790070147192
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 429,
+        "t": 1790070147290
+      },
+      {
+        "path": "/rest/v1/profiles",
+        "durationMs": 438,
+        "t": 1790070147736
+      },
+      {
+        "path": "/rest/v1/course_members",
+        "durationMs": 450,
+        "t": 1790070147746
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 495,
+        "t": 1790070148308
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 500,
+        "t": 1790070148318
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 499,
+        "t": 1790070148319
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 804,
+        "t": 1790070148619
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 420,
+        "t": 1790070148764
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 428,
+        "t": 1790070148792
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 767,
+        "t": 1790070149404
+      }
+    ]
+  },
+  {
+    "name": "available-courses",
+    "path": "/student/courses",
+    "wallStart": 1790070150144,
+    "wallEnd": 1790070153539,
+    "wallMs": 3395,
+    "ttfbMs": 1884,
+    "domContentLoadedMs": 1909,
+    "supabaseCallCount": 14,
+    "authGetUserCount": 9,
+    "totalSupabaseMs": 6436,
+    "callsByPath": {
+      "/auth/v1/user": 9,
+      "/rest/v1/profiles": 1,
+      "/rest/v1/courses": 1,
+      "/rest/v1/course_members": 1,
+      "/rest/v1/rpc/get_course_instructors": 1,
+      "/rest/v1/enrollment_requests": 1
+    },
+    "calls": [
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 430,
+        "t": 1790070150579
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 439,
+        "t": 1790070151030
+      },
+      {
+        "path": "/rest/v1/profiles",
+        "durationMs": 495,
+        "t": 1790070151530
+      },
+      {
+        "path": "/rest/v1/courses",
+        "durationMs": 501,
+        "t": 1790070151535
+      },
+      {
+        "path": "/rest/v1/course_members",
+        "durationMs": 456,
+        "t": 1790070151997
+      },
+      {
+        "path": "/rest/v1/rpc/get_course_instructors",
+        "durationMs": 471,
+        "t": 1790070152014
+      },
+      {
+        "path": "/rest/v1/enrollment_requests",
+        "durationMs": 482,
+        "t": 1790070152024
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 451,
+        "t": 1790070152532
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 450,
+        "t": 1790070152533
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 457,
+        "t": 1790070152544
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 458,
+        "t": 1790070152549
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 443,
+        "t": 1790070152994
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 452,
+        "t": 1790070153008
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 451,
+        "t": 1790070153025
+      }
+    ]
+  },
+  {
+    "name": "course-home",
+    "path": "/student/courses/11111111-1111-1111-1111-111111111111",
+    "wallStart": 1790070153752,
+    "wallEnd": 1790070160531,
+    "wallMs": 6779,
+    "ttfbMs": 2808,
+    "domContentLoadedMs": 2827,
+    "supabaseCallCount": 37,
+    "authGetUserCount": 29,
+    "totalSupabaseMs": 17120,
+    "callsByPath": {
+      "/auth/v1/user": 29,
+      "/rest/v1/announcements": 1,
+      "/rest/v1/courses": 1,
+      "/rest/v1/profiles": 1,
+      "/rest/v1/course_members": 1,
+      "/rest/v1/units": 1,
+      "/rest/v1/lectures": 1,
+      "/rest/v1/materials": 1,
+      "/rest/v1/material_versions": 1
+    },
+    "calls": [
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 444,
+        "t": 1790070154200
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 433,
+        "t": 1790070154642
+      },
+      {
+        "path": "/rest/v1/announcements",
+        "durationMs": 444,
+        "t": 1790070154654
+      },
+      {
+        "path": "/rest/v1/courses",
+        "durationMs": 446,
+        "t": 1790070154655
+      },
+      {
+        "path": "/rest/v1/profiles",
+        "durationMs": 439,
+        "t": 1790070155086
+      },
+      {
+        "path": "/rest/v1/course_members",
+        "durationMs": 444,
+        "t": 1790070155089
+      },
+      {
+        "path": "/rest/v1/units",
+        "durationMs": 443,
+        "t": 1790070155101
+      },
+      {
+        "path": "/rest/v1/lectures",
+        "durationMs": 450,
+        "t": 1790070155554
+      },
+      {
+        "path": "/rest/v1/materials",
+        "durationMs": 481,
+        "t": 1790070156039
+      },
+      {
+        "path": "/rest/v1/material_versions",
+        "durationMs": 474,
+        "t": 1790070156518
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 584,
+        "t": 1790070157203
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 590,
+        "t": 1790070157211
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 748,
+        "t": 1790070157372
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 803,
+        "t": 1790070157429
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 423,
+        "t": 1790070157646
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 425,
+        "t": 1790070157656
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 429,
+        "t": 1790070157814
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 434,
+        "t": 1790070157879
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 425,
+        "t": 1790070158084
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 428,
+        "t": 1790070158097
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 427,
+        "t": 1790070158258
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 435,
+        "t": 1790070158327
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 423,
+        "t": 1790070158519
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 460,
+        "t": 1790070158583
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 422,
+        "t": 1790070158692
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 432,
+        "t": 1790070158771
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 421,
+        "t": 1790070159017
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 425,
+        "t": 1790070159026
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 426,
+        "t": 1790070159129
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 435,
+        "t": 1790070159216
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 418,
+        "t": 1790070159456
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 460,
+        "t": 1790070159489
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 435,
+        "t": 1790070159576
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 433,
+        "t": 1790070159659
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 423,
+        "t": 1790070159890
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 428,
+        "t": 1790070159928
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 430,
+        "t": 1790070160017
+      }
+    ]
+  },
+  {
+    "name": "materials",
+    "path": "/student/courses/11111111-1111-1111-1111-111111111111/materials",
+    "wallStart": 1790070160747,
+    "wallEnd": 1790070167887,
+    "wallMs": 7140,
+    "ttfbMs": 2873,
+    "domContentLoadedMs": 2923,
+    "supabaseCallCount": 38,
+    "authGetUserCount": 31,
+    "totalSupabaseMs": 17033,
+    "callsByPath": {
+      "/auth/v1/user": 31,
+      "/rest/v1/courses": 1,
+      "/rest/v1/course_members": 1,
+      "/rest/v1/profiles": 1,
+      "/rest/v1/units": 1,
+      "/rest/v1/lectures": 1,
+      "/rest/v1/materials": 1,
+      "/rest/v1/material_versions": 1
+    },
+    "calls": [
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 436,
+        "t": 1790070161188
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 430,
+        "t": 1790070161636
+      },
+      {
+        "path": "/rest/v1/courses",
+        "durationMs": 523,
+        "t": 1790070161730
+      },
+      {
+        "path": "/rest/v1/course_members",
+        "durationMs": 447,
+        "t": 1790070162085
+      },
+      {
+        "path": "/rest/v1/profiles",
+        "durationMs": 472,
+        "t": 1790070162110
+      },
+      {
+        "path": "/rest/v1/units",
+        "durationMs": 445,
+        "t": 1790070162176
+      },
+      {
+        "path": "/rest/v1/lectures",
+        "durationMs": 443,
+        "t": 1790070162620
+      },
+      {
+        "path": "/rest/v1/materials",
+        "durationMs": 451,
+        "t": 1790070163074
+      },
+      {
+        "path": "/rest/v1/material_versions",
+        "durationMs": 539,
+        "t": 1790070163616
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 451,
+        "t": 1790070164160
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 452,
+        "t": 1790070164164
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 469,
+        "t": 1790070164174
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 495,
+        "t": 1790070164210
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 459,
+        "t": 1790070164659
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 456,
+        "t": 1790070164680
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 496,
+        "t": 1790070164687
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 498,
+        "t": 1790070164702
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 439,
+        "t": 1790070165112
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 431,
+        "t": 1790070165132
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 427,
+        "t": 1790070165137
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 431,
+        "t": 1790070165145
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 421,
+        "t": 1790070165551
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 431,
+        "t": 1790070165587
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 428,
+        "t": 1790070165588
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 447,
+        "t": 1790070165597
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 423,
+        "t": 1790070165985
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 425,
+        "t": 1790070166033
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 425,
+        "t": 1790070166036
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 436,
+        "t": 1790070166046
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 424,
+        "t": 1790070166417
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 426,
+        "t": 1790070166489
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 429,
+        "t": 1790070166490
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 431,
+        "t": 1790070166496
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 419,
+        "t": 1790070166858
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 427,
+        "t": 1790070166956
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 423,
+        "t": 1790070166958
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 435,
+        "t": 1790070166976
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 493,
+        "t": 1790070167369
+      }
+    ]
+  },
+  {
+    "name": "course-content",
+    "path": "/student/courses/11111111-1111-1111-1111-111111111111/course",
+    "wallStart": 1790070168104,
+    "wallEnd": 1790070174946,
+    "wallMs": 6842,
+    "ttfbMs": 2801,
+    "domContentLoadedMs": 2820,
+    "supabaseCallCount": 38,
+    "authGetUserCount": 31,
+    "totalSupabaseMs": 16521,
+    "callsByPath": {
+      "/auth/v1/user": 31,
+      "/rest/v1/courses": 1,
+      "/rest/v1/course_members": 1,
+      "/rest/v1/profiles": 1,
+      "/rest/v1/units": 1,
+      "/rest/v1/lectures": 1,
+      "/rest/v1/materials": 1,
+      "/rest/v1/material_versions": 1
+    },
+    "calls": [
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 430,
+        "t": 1790070168539
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 426,
+        "t": 1790070168985
+      },
+      {
+        "path": "/rest/v1/courses",
+        "durationMs": 562,
+        "t": 1790070169124
+      },
+      {
+        "path": "/rest/v1/course_members",
+        "durationMs": 433,
+        "t": 1790070169421
+      },
+      {
+        "path": "/rest/v1/profiles",
+        "durationMs": 441,
+        "t": 1790070169430
+      },
+      {
+        "path": "/rest/v1/units",
+        "durationMs": 447,
+        "t": 1790070169572
+      },
+      {
+        "path": "/rest/v1/lectures",
+        "durationMs": 436,
+        "t": 1790070170010
+      },
+      {
+        "path": "/rest/v1/materials",
+        "durationMs": 432,
+        "t": 1790070170442
+      },
+      {
+        "path": "/rest/v1/material_versions",
+        "durationMs": 458,
+        "t": 1790070170902
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 423,
+        "t": 1790070171368
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 424,
+        "t": 1790070171373
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 426,
+        "t": 1790070171377
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 432,
+        "t": 1790070171385
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 431,
+        "t": 1790070171813
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 429,
+        "t": 1790070171824
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 437,
+        "t": 1790070171837
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 435,
+        "t": 1790070171839
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 419,
+        "t": 1790070172243
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 435,
+        "t": 1790070172267
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 428,
+        "t": 1790070172279
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 428,
+        "t": 1790070172281
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 422,
+        "t": 1790070172673
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 436,
+        "t": 1790070172712
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 430,
+        "t": 1790070172724
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 429,
+        "t": 1790070172725
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 428,
+        "t": 1790070173112
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 422,
+        "t": 1790070173144
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 428,
+        "t": 1790070173171
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 432,
+        "t": 1790070173177
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 424,
+        "t": 1790070173546
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 422,
+        "t": 1790070173576
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 429,
+        "t": 1790070173623
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 439,
+        "t": 1790070173627
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 435,
+        "t": 1790070173996
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 435,
+        "t": 1790070174028
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 434,
+        "t": 1790070174080
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 442,
+        "t": 1790070174090
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 422,
+        "t": 1790070174427
+      }
+    ]
+  },
+  {
+    "name": "assessments-list",
+    "path": "/student/courses/11111111-1111-1111-1111-111111111111/assessments",
+    "wallStart": 1790070175164,
+    "wallEnd": 1790070180795,
+    "wallMs": 5631,
+    "ttfbMs": 1464,
+    "domContentLoadedMs": 1492,
+    "supabaseCallCount": 37,
+    "authGetUserCount": 33,
+    "totalSupabaseMs": 16007,
+    "callsByPath": {
+      "/auth/v1/user": 33,
+      "/rest/v1/assessments": 1,
+      "/rest/v1/course_members": 1,
+      "/rest/v1/profiles": 1,
+      "/rest/v1/attempts": 1
+    },
+    "calls": [
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 428,
+        "t": 1790070175601
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 425,
+        "t": 1790070176044
+      },
+      {
+        "path": "/rest/v1/assessments",
+        "durationMs": 553,
+        "t": 1790070176173
+      },
+      {
+        "path": "/rest/v1/course_members",
+        "durationMs": 433,
+        "t": 1790070176479
+      },
+      {
+        "path": "/rest/v1/profiles",
+        "durationMs": 433,
+        "t": 1790070176480
+      },
+      {
+        "path": "/rest/v1/attempts",
+        "durationMs": 446,
+        "t": 1790070176622
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 423,
+        "t": 1790070177124
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 426,
+        "t": 1790070177125
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 422,
+        "t": 1790070177126
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 430,
+        "t": 1790070177136
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 423,
+        "t": 1790070177578
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 426,
+        "t": 1790070177579
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 436,
+        "t": 1790070177581
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 432,
+        "t": 1790070177594
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 419,
+        "t": 1790070178017
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 421,
+        "t": 1790070178029
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 429,
+        "t": 1790070178035
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 424,
+        "t": 1790070178043
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 421,
+        "t": 1790070178447
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 423,
+        "t": 1790070178462
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 428,
+        "t": 1790070178481
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 431,
+        "t": 1790070178489
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 460,
+        "t": 1790070178920
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 451,
+        "t": 1790070178922
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 433,
+        "t": 1790070178925
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 438,
+        "t": 1790070178940
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 422,
+        "t": 1790070179383
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 424,
+        "t": 1790070179388
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 428,
+        "t": 1790070179396
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 448,
+        "t": 1790070179427
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 420,
+        "t": 1790070179825
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 426,
+        "t": 1790070179837
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 428,
+        "t": 1790070179843
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 429,
+        "t": 1790070179867
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 421,
+        "t": 1790070180257
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 421,
+        "t": 1790070180274
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 426,
+        "t": 1790070180282
+      }
+    ]
+  },
+  {
+    "name": "grades",
+    "path": "/student/courses/11111111-1111-1111-1111-111111111111/grades",
+    "wallStart": 1790070181013,
+    "wallEnd": 1790070185973,
+    "wallMs": 4960,
+    "ttfbMs": 1335,
+    "domContentLoadedMs": 1372,
+    "supabaseCallCount": 31,
+    "authGetUserCount": 27,
+    "totalSupabaseMs": 13210,
+    "callsByPath": {
+      "/auth/v1/user": 27,
+      "/rest/v1/assessments": 1,
+      "/rest/v1/course_members": 1,
+      "/rest/v1/profiles": 1,
+      "/rest/v1/attempts": 1
+    },
+    "calls": [
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 434,
+        "t": 1790070181453
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 420,
+        "t": 1790070181884
+      },
+      {
+        "path": "/rest/v1/assessments",
+        "durationMs": 456,
+        "t": 1790070181922
+      },
+      {
+        "path": "/rest/v1/course_members",
+        "durationMs": 428,
+        "t": 1790070182314
+      },
+      {
+        "path": "/rest/v1/profiles",
+        "durationMs": 432,
+        "t": 1790070182318
+      },
+      {
+        "path": "/rest/v1/attempts",
+        "durationMs": 422,
+        "t": 1790070182344
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 423,
+        "t": 1790070182853
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 424,
+        "t": 1790070182857
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 423,
+        "t": 1790070182861
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 431,
+        "t": 1790070182867
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 422,
+        "t": 1790070183288
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 419,
+        "t": 1790070183303
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 425,
+        "t": 1790070183305
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 425,
+        "t": 1790070183310
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 423,
+        "t": 1790070183718
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 419,
+        "t": 1790070183741
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 433,
+        "t": 1790070183759
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 432,
+        "t": 1790070183760
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 424,
+        "t": 1790070184154
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 419,
+        "t": 1790070184171
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 427,
+        "t": 1790070184206
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 430,
+        "t": 1790070184207
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 423,
+        "t": 1790070184586
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 420,
+        "t": 1790070184600
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 427,
+        "t": 1790070184650
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 431,
+        "t": 1790070184656
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 424,
+        "t": 1790070185022
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 418,
+        "t": 1790070185028
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 426,
+        "t": 1790070185095
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 428,
+        "t": 1790070185099
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 422,
+        "t": 1790070185453
+      }
+    ]
+  },
+  {
+    "name": "announcements",
+    "path": "/student/courses/11111111-1111-1111-1111-111111111111/announcements",
+    "wallStart": 1790070186192,
+    "wallEnd": 1790070191087,
+    "wallMs": 4895,
+    "ttfbMs": 1297,
+    "domContentLoadedMs": 1325,
+    "supabaseCallCount": 30,
+    "authGetUserCount": 27,
+    "totalSupabaseMs": 12935,
+    "callsByPath": {
+      "/auth/v1/user": 27,
+      "/rest/v1/announcements": 1,
+      "/rest/v1/profiles": 1,
+      "/rest/v1/course_members": 1
+    },
+    "calls": [
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 421,
+        "t": 1790070186618
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 429,
+        "t": 1790070187053
+      },
+      {
+        "path": "/rest/v1/announcements",
+        "durationMs": 437,
+        "t": 1790070187065
+      },
+      {
+        "path": "/rest/v1/profiles",
+        "durationMs": 425,
+        "t": 1790070187480
+      },
+      {
+        "path": "/rest/v1/course_members",
+        "durationMs": 431,
+        "t": 1790070187486
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 420,
+        "t": 1790070187968
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 425,
+        "t": 1790070187971
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 423,
+        "t": 1790070187975
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 437,
+        "t": 1790070187982
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 420,
+        "t": 1790070188412
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 427,
+        "t": 1790070188427
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 426,
+        "t": 1790070188428
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 430,
+        "t": 1790070188436
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 419,
+        "t": 1790070188841
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 428,
+        "t": 1790070188870
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 426,
+        "t": 1790070188872
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 424,
+        "t": 1790070188876
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 418,
+        "t": 1790070189267
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 424,
+        "t": 1790070189315
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 446,
+        "t": 1790070189339
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 496,
+        "t": 1790070189383
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 420,
+        "t": 1790070189697
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 482,
+        "t": 1790070189806
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 457,
+        "t": 1790070189807
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 429,
+        "t": 1790070189822
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 419,
+        "t": 1790070190125
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 428,
+        "t": 1790070190274
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 424,
+        "t": 1790070190275
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 422,
+        "t": 1790070190276
+      },
+      {
+        "path": "/auth/v1/user",
+        "durationMs": 422,
+        "t": 1790070190564
+      }
+    ]
+  }
+]
